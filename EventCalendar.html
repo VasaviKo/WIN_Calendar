@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Year Calendar with Events</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --card: #feb8b6;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --border: #dbe2ea;
+      --accent: #9eaf8b;
+      --accent-soft: #dbeafe;
+      --event: #dcfce7;
+      --event-border: #22c55e;
+      --today: #bdeedb;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #ffdfe0;
+      color: var(--text);
+    }
+
+    .app {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .title-wrap h1 {
+      margin: 0;
+      font-size: 32px;
+    }
+
+    .title-wrap p {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    button, select, input, textarea {
+      font: inherit;
+    }
+
+    button, select {
+      border: 1px solid var(--border);
+      background: white;
+      color: var(--text);
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    button.primary {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 20px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    .month {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 14px;
+    }
+
+    .month h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .weekday-row, .days-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+    }
+
+    .weekday {
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+      padding-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .day {
+      min-height: 72px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .day:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+    }
+
+    .day.empty {
+      background: #f9fafb;
+      cursor: default;
+    }
+
+    .day-num {
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .day.today {
+      background: var(--today);
+      border-color: #205f3c;
+    }
+
+    .event-pill {
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: var(--event);
+      border: 1px solid var(--event-border);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .more {
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      height: fit-content;
+      position: sticky;
+      top: 20px;
+    }
+
+    .sidebar h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 22px;
+    }
+
+    .sidebar p {
+      color: var(--muted);
+      margin-top: 0;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .form-group label {
+      font-size: 14px;
+      font-weight: bold;
+    }
+
+    input, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      background: white;
+    }
+
+    textarea {
+      min-height: 72px;
+      resize: vertical;
+    }
+
+    .selected-date {
+      background: #dadebb;
+      color: #9eaf8b;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: bold;
+      margin-bottom: 14px;
+    }
+
+    .events-list {
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+    }
+
+    .event-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #fff;
+    }
+
+    .event-item strong {
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .event-meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .event-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .small-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1200px) {
+      .calendar-grid {
+        grid-template-columns: repeat(2, minmax(260px, 1fr));
+      }
+    }
+
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+      }
+
+      .calendar-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div class="topbar">
+      <div class="title-wrap">
+        <img src="https://elliott.physiciansmutual.com/content/r/9a9ee9ae-586a-4705-84e0-58cf15074284?site_id=MWJkZTQwYzktNjgyYy00NWNlLTk4NDAtZWNjNTNjNGFlZjQw&ts=1768415886663&preview-file-response=inline" alt="WIN logo">
+        <h1 id="yearTitle"></h1>
+        <p>Click any day to add an event. Events are saved in your browser.</p>
+      </div>
+      <div class="controls">
+        <button id="prevYear">Previous Year</button>
+        <button id="todayBtn">Current Year</button>
+        <button id="nextYear">Next Year</button>
+        <button id="clearAllBtn">Clear All Events</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <div id="calendar" class="calendar-grid"></div>
+
+      <aside class="sidebar">
+        <h3>Add Event</h3>
+        <p>Pick a date from the calendar, then enter the event details.</p>
+        <div id="selectedDate" class="selected-date">No date selected</div>
+
+        <div class="form-group">
+          <label for="eventTitle">Event Title</label>
+          <input id="eventTitle" type="text" placeholder="Team meeting" />
+        </div>
+
+        <div class="form-group">
+          <label for="eventTime">Time</label>
+          <input id="eventTime" type="time" />
+        </div>
+
+        <div class="form-group">
+          <label for="eventDescription">Description</label>
+          <textarea id="eventDescription" placeholder="Optional details"></textarea>
+        </div>
+
+        <button id="saveEventBtn" class="primary" style="width:100%;">Save Event</button>
+
+        <div class="events-list">
+          <h3 style="font-size:18px; margin-bottom: 10px;">Events for Selected Day</h3>
+          <div id="dayEvents">Select a date to view events.</div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <script>
+    const monthNames = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    const weekdayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    const calendarEl = document.getElementById('calendar');
+    const yearTitleEl = document.getElementById('yearTitle');
+    const selectedDateEl = document.getElementById('selectedDate');
+    const dayEventsEl = document.getElementById('dayEvents');
+    const eventTitleEl = document.getElementById('eventTitle');
+    const eventTimeEl = document.getElementById('eventTime');
+    const eventDescriptionEl = document.getElementById('eventDescription');
+
+    let currentYear = new Date().getFullYear();
+    let selectedDateKey = null;
+    let events = loadEvents();
+
+    function pad(n) {
+      return String(n).padStart(2, '0');
+    }
+
+    function toDateKey(year, month, day) {
+      return `${year}-${pad(month + 1)}-${pad(day)}`;
+    }
+
+    function formatDateKey(dateKey) {
+      const [year, month, day] = dateKey.split('-').map(Number);
+      return `${monthNames[month - 1]} ${day}, ${year}`;
+    }
+
+    function loadEvents() {
+      try {
+        return JSON.parse(localStorage.getItem('yearCalendarEvents') || '{}');
+      } catch {
+        return {};
+      }
+    }
+
+    function saveEvents() {
+      localStorage.setItem('yearCalendarEvents', JSON.stringify(events));
+    }
+
+    function getSortedEvents(dateKey) {
+      return (events[dateKey] || []).slice().sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    }
+
+    function renderCalendar() {
+      yearTitleEl.textContent = `${currentYear} Year Calendar`;
+      calendarEl.innerHTML = '';
+
+      const today = new Date();
+      const todayKey = toDateKey(today.getFullYear(), today.getMonth(), today.getDate());
+
+      for (let month = 0; month < 12; month++) {
+        const monthCard = document.createElement('section');
+        monthCard.className = 'month';
+
+        const title = document.createElement('h2');
+        title.textContent = monthNames[month];
+        monthCard.appendChild(title);
+
+        const weekdayRow = document.createElement('div');
+        weekdayRow.className = 'weekday-row';
+        weekdayNames.forEach(day => {
+          const wd = document.createElement('div');
+          wd.className = 'weekday';
+          wd.textContent = day;
+          weekdayRow.appendChild(wd);
+        });
+        monthCard.appendChild(weekdayRow);
+
+        const daysGrid = document.createElement('div');
+        daysGrid.className = 'days-grid';
+
+        const firstDay = new Date(currentYear, month, 1).getDay();
+        const daysInMonth = new Date(currentYear, month + 1, 0).getDate();
+
+        for (let i = 0; i < firstDay; i++) {
+          const empty = document.createElement('div');
+          empty.className = 'day empty';
+          daysGrid.appendChild(empty);
+        }
+
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateKey = toDateKey(currentYear, month, day);
+          const dayEl = document.createElement('div');
+          dayEl.className = 'day';
+          if (dateKey === todayKey) dayEl.classList.add('today');
+
+          dayEl.addEventListener('click', () => {
+            selectedDateKey = dateKey;
+            selectedDateEl.textContent = formatDateKey(dateKey);
+            renderSelectedDayEvents();
+            eventTitleEl.focus();
+          });
+
+          const dayNum = document.createElement('div');
+          dayNum.className = 'day-num';
+          dayNum.textContent = day;
+          dayEl.appendChild(dayNum);
+
+          const dayEventList = getSortedEvents(dateKey);
+          dayEventList.slice(0, 2).forEach(event => {
+            const pill = document.createElement('div');
+            pill.className = 'event-pill';
+            pill.textContent = event.time ? `${event.time} ${event.title}` : event.title;
+            dayEl.appendChild(pill);
+          });
+
+          if (dayEventList.length > 2) {
+            const more = document.createElement('div');
+            more.className = 'more';
+            more.textContent = `+${dayEventList.length - 2} more`;
+            dayEl.appendChild(more);
+          }
+
+          daysGrid.appendChild(dayEl);
+        }
+
+        monthCard.appendChild(daysGrid);
+        calendarEl.appendChild(monthCard);
+      }
+    }
+
+    function renderSelectedDayEvents() {
+      if (!selectedDateKey) {
+        dayEventsEl.textContent = 'Select a date to view events.';
+        return;
+      }
+
+      const list = getSortedEvents(selectedDateKey);
+
+      if (list.length === 0) {
+        dayEventsEl.innerHTML = '<div class="event-meta">No events for this date yet.</div>';
+        return;
+      }
+
+      dayEventsEl.innerHTML = '';
+      list.forEach((event, index) => {
+        const item = document.createElement('div');
+        item.className = 'event-item';
+
+        const title = document.createElement('strong');
+        title.textContent = event.title;
+        item.appendChild(title);
+
+        const meta = document.createElement('div');
+        meta.className = 'event-meta';
+        meta.textContent = event.time ? `Time: ${event.time}` : 'No time set';
+        item.appendChild(meta);
+
+        if (event.description) {
+          const desc = document.createElement('div');
+          desc.textContent = event.description;
+          item.appendChild(desc);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'event-actions';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'small-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () => {
+          eventTitleEl.value = event.title;
+          eventTimeEl.value = event.time || '';
+          eventDescriptionEl.value = event.description || '';
+          deleteEvent(selectedDateKey, index, false);
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'small-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.addEventListener('click', () => {
+          deleteEvent(selectedDateKey, index, true);
+        });
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        item.appendChild(actions);
+
+        dayEventsEl.appendChild(item);
+      });
+    }
+
+    function deleteEvent(dateKey, index, rerender = true) {
+      if (!events[dateKey]) return;
+      events[dateKey].splice(index, 1);
+      if (events[dateKey].length === 0) delete events[dateKey];
+      saveEvents();
+      if (rerender) {
+        renderCalendar();
+        renderSelectedDayEvents();
+      }
+    }
+
+    function saveEvent() {
+      if (!selectedDateKey) {
+        alert('Please select a date first.');
+        return;
+      }
+
+      const title = eventTitleEl.value.trim();
+      const time = eventTimeEl.value;
+      const description = eventDescriptionEl.value.trim();
+
+      if (!title) {
+        alert('Please enter an event title.');
+        return;
+      }
+
+      if (!events[selectedDateKey]) events[selectedDateKey] = [];
+      events[selectedDateKey].push({ title, time, description });
+      saveEvents();
+
+      eventTitleEl.value = '';
+      eventTimeEl.value = '';
+      eventDescriptionEl.value = '';
+
+      renderCalendar();
+      renderSelectedDayEvents();
+    }
+
+    document.getElementById('saveEventBtn').addEventListener('click', saveEvent);
+    document.getElementById('prevYear').addEventListener('click', () => {
+      currentYear -= 1;
+      renderCalendar();
+    });
+    document.getElementById('nextYear').addEventListener('click', () => {
+      currentYear += 1;
+      renderCalendar();
+    });
+    document.getElementById('todayBtn').addEventListener('click', () => {
+      currentYear = new Date().getFullYear();
+      renderCalendar();
+    });
+    document.getElementById('clearAllBtn').addEventListener('click', () => {
+      const confirmed = confirm('Delete all saved events from this browser?');
+      if (!confirmed) return;
+      events = {};
+      saveEvents();
+      renderCalendar();
+      renderSelectedDayEvents();
+    });
+
+    renderCalendar();
+    renderSelectedDayEvents();
+  </script>
+</body>
+</html>
