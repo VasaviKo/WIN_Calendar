@@ -7,15 +7,15 @@
   <style>
     :root {
       --bg: #f6f7fb;
-      --card: #feb8b6;
+      --card: #ffffff;
       --text: #1f2937;
       --muted: #6b7280;
       --border: #dbe2ea;
-      --accent: #9eaf8b;
+      --accent: #2563eb;
       --accent-soft: #dbeafe;
       --event: #dcfce7;
       --event-border: #22c55e;
-      --today: #bdeedb;
+      --today: #fef3c7;
       --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
     }
 
@@ -24,7 +24,7 @@
     body {
       margin: 0;
       font-family: Arial, Helvetica, sans-serif;
-      background: #ffdfe0;
+      background: var(--bg);
       color: var(--text);
     }
 
@@ -80,15 +80,14 @@
     }
 
     .layout {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 20px;
+      display: block;
     }
 
     .calendar-grid {
       display: grid;
-      grid-template-columns: repeat(3, minmax(260px, 1fr));
-      gap: 18px;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap: 24px;
+      margin-bottom: 24px;
     }
 
     .month {
@@ -96,12 +95,12 @@
       border: 1px solid var(--border);
       border-radius: 18px;
       box-shadow: var(--shadow);
-      padding: 14px;
+      padding: 20px;
     }
 
     .month h2 {
-      margin: 0 0 12px;
-      font-size: 20px;
+      margin: 0 0 14px;
+      font-size: 26px;
     }
 
     .weekday-row, .days-grid {
@@ -112,21 +111,21 @@
 
     .weekday {
       text-align: center;
-      font-size: 12px;
+      font-size: 14px;
       color: var(--muted);
-      padding-bottom: 4px;
+      padding-bottom: 6px;
       font-weight: bold;
     }
 
     .day {
-      min-height: 72px;
+      min-height: 110px;
       border: 1px solid var(--border);
-      border-radius: 10px;
+      border-radius: 12px;
       background: #fff;
-      padding: 6px;
+      padding: 10px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 6px;
       cursor: pointer;
       transition: transform 0.12s ease, box-shadow 0.12s ease;
     }
@@ -142,18 +141,18 @@
     }
 
     .day-num {
-      font-size: 12px;
+      font-size: 16px;
       font-weight: bold;
     }
 
     .day.today {
       background: var(--today);
-      border-color: #205f3c;
+      border-color: #f59e0b;
     }
 
     .event-pill {
-      font-size: 11px;
-      padding: 2px 6px;
+      font-size: 12px;
+      padding: 4px 8px;
       border-radius: 999px;
       background: var(--event);
       border: 1px solid var(--event-border);
@@ -172,10 +171,10 @@
       border: 1px solid var(--border);
       border-radius: 18px;
       box-shadow: var(--shadow);
-      padding: 16px;
+      padding: 20px;
       height: fit-content;
-      position: sticky;
-      top: 20px;
+      max-width: 900px;
+      margin: 0 auto;
     }
 
     .sidebar h3 {
@@ -215,8 +214,8 @@
     }
 
     .selected-date {
-      background: #dadebb;
-      color: #9eaf8b;
+      background: var(--accent-soft);
+      color: #1e3a8a;
       border-radius: 10px;
       padding: 10px 12px;
       font-weight: bold;
@@ -262,14 +261,24 @@
 
     @media (max-width: 1200px) {
       .calendar-grid {
-        grid-template-columns: repeat(2, minmax(260px, 1fr));
+        grid-template-columns: 1fr;
       }
+    }
     }
 
     @media (max-width: 900px) {
-      .layout {
+      .calendar-grid {
         grid-template-columns: 1fr;
       }
+
+      .month {
+        padding: 16px;
+      }
+
+      .day {
+        min-height: 88px;
+      }
+    }
 
       .sidebar {
         position: static;
@@ -285,7 +294,6 @@
   <div class="app">
     <div class="topbar">
       <div class="title-wrap">
-        <img src="https://elliott.physiciansmutual.com/content/r/9a9ee9ae-586a-4705-84e0-58cf15074284?site_id=MWJkZTQwYzktNjgyYy00NWNlLTk4NDAtZWNjNTNjNGFlZjQw&ts=1768415886663&preview-file-response=inline" alt="WIN logo">
         <h1 id="yearTitle"></h1>
         <p>Click any day to add an event. Events are saved in your browser.</p>
       </div>
@@ -320,6 +328,11 @@
           <textarea id="eventDescription" placeholder="Optional details"></textarea>
         </div>
 
+        <div class="form-group">
+          <label for="eventPassword">Password</label>
+          <input id="eventPassword" type="password" placeholder="Enter password to save" />
+        </div>
+
         <button id="saveEventBtn" class="primary" style="width:100%;">Save Event</button>
 
         <div class="events-list">
@@ -344,6 +357,7 @@
     const eventTitleEl = document.getElementById('eventTitle');
     const eventTimeEl = document.getElementById('eventTime');
     const eventDescriptionEl = document.getElementById('eventDescription');
+    const eventPasswordEl = document.getElementById('eventPassword');
 
     let currentYear = new Date().getFullYear();
     let selectedDateKey = null;
@@ -534,6 +548,12 @@
         return;
       }
 
+      const password = eventPasswordEl.value;
+      if (password !== 'JLMCMV') {
+        alert('Incorrect password.');
+        return;
+      }
+
       const title = eventTitleEl.value.trim();
       const time = eventTimeEl.value;
       const description = eventDescriptionEl.value.trim();
@@ -550,6 +570,7 @@
       eventTitleEl.value = '';
       eventTimeEl.value = '';
       eventDescriptionEl.value = '';
+      eventPasswordEl.value = '';
 
       renderCalendar();
       renderSelectedDayEvents();
